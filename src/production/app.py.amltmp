@@ -14,18 +14,18 @@ def ask_gpt(prompt):
     This function takes a prompt and returns the response from OpenAI's GPT-4 model.
     """
     try:
-        response = openai.Completion.create(
-            model="gpt-3.5-turbo",  # replace with your preferred GPT-4 model version
-            prompt=prompt,
-            max_tokens=150  # Adjust as needed
+        response = openai.ChatCompletion.create(
+            model="gpt-4.0",  # replace with your preferred GPT-4 model version
+            messages=[{"role": "system", "content": "You are a helpful assistant."}, 
+                      {"role": "user", "content": prompt}]
         )
-        return response.choices[0].text.strip()
+        return response.choices[0].message['content']
     except Exception as e:
         return f"An error occurred: {e}"
 
 # Streamlit app
 def main():
-    st.title('Chat with GPT-4')
+    st.title('Chat with Mede GenBI')
 
     user_input = st.text_input("Enter your prompt:", "")
 
