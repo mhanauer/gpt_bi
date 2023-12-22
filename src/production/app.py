@@ -15,7 +15,7 @@ def ask_gpt(prompt):
     """
     try:
         response = openai.Completion.create(
-            model="gpt-4.0-turbo",  # replace with your preferred GPT-4 model version
+            model="gpt-3.5-turbo",  # replace with your preferred GPT-4 model version
             prompt=prompt,
             max_tokens=150  # Adjust as needed
         )
@@ -31,7 +31,7 @@ def main():
 
     if user_input:
         gpt_response = ask_gpt(user_input)
-        st.text_area("GPT-4's response:", gpt_response, height=200)
+        st.text_area("Mede GenBI's response:", gpt_response, height=200)
 
 if __name__ == '__main__':
     main()
