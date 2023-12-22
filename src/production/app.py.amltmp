@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import openai
 from dotenv import load_dotenv
 import os
@@ -18,20 +19,36 @@ def ask_gpt(prompt):
             model="gpt-4",  # Replace with your desired GPT model
             messages=[{"role": "user", "content": prompt}]
         )
-        # Corrected way to access the response content
         return response.choices[0].message.content
     except Exception as e:
         return f"An error occurred: {e}"
 
+def process_excel_file(uploaded_file):
+    # Read the excel file into a pandas DataFrame
+    df = pd.read_excel(uploaded_file)
+    
+    # Convert the DataFrame to a string or extract specific information for the prompt
+    prompt = df.to_string()
+
+    return prompt
+
 # Streamlit app
 def main():
-    st.title('Chat with GPT')
+    st.title('Chat with GPT and Upload Excel')
 
+    uploaded_file = st.file_uploader("Choose an Excel file", type=['xlsx'])
     user_input = st.text_input("Enter your prompt:", "")
 
-    if user_input:
+    if uploaded_file:
+        # Process the Excel file to create a prompt
+        prompt = process_excel_file(uploaded_file)
+        gpt_response = ask_gpt(prompt)
+        st.text_area("GPT's response from Excel:", gpt_response, height=200)
+    
+    elif user_input:
+        # Direct user prompt
         gpt_response = ask_gpt(user_input)
-        st.text_area("GPT's response:", gpt_response, height=200)
+        st.text_area("GPT's direct response:", gpt_response, height=200)
 
 if __name__ == '__main__':
     main()
