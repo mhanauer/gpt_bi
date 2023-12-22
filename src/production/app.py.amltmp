@@ -23,9 +23,9 @@ def ask_gpt(prompt):
     except Exception as e:
         return f"An error occurred: {e}"
 
-def process_excel_file(uploaded_file):
-    # Read the excel file into a pandas DataFrame
-    df = pd.read_excel(uploaded_file)
+def process_csv_file(uploaded_file):
+    # Read the CSV file into a pandas DataFrame
+    df = pd.read_csv(uploaded_file)
     
     # Convert the DataFrame to a string or extract specific information for the prompt
     prompt = df.to_string()
@@ -34,16 +34,16 @@ def process_excel_file(uploaded_file):
 
 # Streamlit app
 def main():
-    st.title('Chat with GPT and Upload Excel')
+    st.title('Chat with GPT and Upload CSV')
 
-    uploaded_file = st.file_uploader("Choose an Excel file", type=['xlsx'])
+    uploaded_file = st.file_uploader("Choose a CSV file", type=['csv'])
     user_input = st.text_input("Enter your prompt:", "")
 
     if uploaded_file:
-        # Process the Excel file to create a prompt
-        prompt = process_excel_file(uploaded_file)
+        # Process the CSV file to create a prompt
+        prompt = process_csv_file(uploaded_file)
         gpt_response = ask_gpt(prompt)
-        st.text_area("GPT's response from Excel:", gpt_response, height=200)
+        st.text_area("GPT's response from CSV:", gpt_response, height=200)
     
     elif user_input:
         # Direct user prompt
