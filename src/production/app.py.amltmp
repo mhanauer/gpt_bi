@@ -15,7 +15,7 @@ def ask_gpt(prompt):
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-4",  # Replace with the model you intend to use
+            model="gpt-4-1106-preview",  # Replace with the model you intend to use
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message['content']
