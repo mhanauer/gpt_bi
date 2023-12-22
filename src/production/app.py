@@ -1,6 +1,3 @@
-The error "'ChatCompletionMessage' object is not subscriptable" suggests that the way we're trying to access the response from the OpenAI API isn't compatible with the returned object structure. Let's correct the code to properly handle the response:
-
-```python
 import streamlit as st
 import openai
 from dotenv import load_dotenv
@@ -38,6 +35,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-```
-
-This updated code correctly accesses the response content from the OpenAI API. The key change is in how the response's content is retrieved: `response.choices[0].message.content`. This aligns with the structure of the response object in the newer version of the OpenAI API.
