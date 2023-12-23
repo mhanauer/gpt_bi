@@ -113,7 +113,7 @@ def main():
             result, error_message = execute_code(extracted_code, df, question)
             if error_message:
                 st.write(f"Error: {error_message}")
-            else if result is not None:
+            elif result is not None:
                 st.write("Result:")
                 st.write(result)
         
