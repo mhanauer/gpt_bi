@@ -4,7 +4,7 @@ import numpy as np
 import os
 import re
 import openai
-import matplotlib.pyplot as plt
+import plotly.express as px
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -37,12 +37,12 @@ This is the metadata of the dataframe:
 {df_head}.
 
 When asked about the data, your response should include the python code describing the
-dataframe `df`. If the question requires data visualization, use Matplotlib for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
+dataframe `df`. If the question requires data visualization, use Plotly for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
 the requested python code with {START_CODE_TAG} exactly and suffix the code with {END_CODE_TAG}
 exactly to answer the following question:
 {question}
 
-Please use only Matplotlib for any plotting requirements.
+Please use only Plotly for any plotting requirements.
 """
     return prompt
 
@@ -61,11 +61,13 @@ def execute_code(code, df, question, max_retries=5):
     
     while retries <= max_retries:
         try:
-            # Check if the code is likely to produce a plot
-            if "plt." in code:
-                exec_locals = {'df': df, 'plt': plt}
+            # Check if the code is likely to produce a plot using Plotly
+            if "px." in code:
+                exec_locals = {'df': df, 'px': px}
                 exec(code, {}, exec_locals)  # Execute the code
-                st.pyplot()  # Display the plot
+                fig = exec_locals.get('fig', None)
+                if fig:
+                    st.plotly_chart(fig)  # Display the Plotly figure
                 return None, None  # Return None as there's no result variable in plot cases
             else:
                 modified_code = f"result = {code}"
