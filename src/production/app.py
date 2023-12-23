@@ -5,6 +5,7 @@ import os
 import re
 import openai
 import plotly.express as px
+import plotly.graph_objects as go
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -61,20 +62,19 @@ def execute_code(code, df, question, max_retries=5):
     
     while retries <= max_retries:
         try:
-            # Check if the code is likely to produce a plot using Plotly
-            if "px." in code:
-                exec_locals = {'df': df, 'px': px}
-                exec(code, {}, exec_locals)  # Execute the code
-                fig = exec_locals.get('fig', None)
-                if fig:
-                    st.plotly_chart(fig)  # Display the Plotly figure
+            exec_locals = {'df': df, 'px': px, 'go': go}
+            exec(code, {}, exec_locals)  # Execute the code
+
+            # Check if the figure has been created
+            fig = exec_locals.get('fig', None)
+            if fig:
+                st.plotly_chart(fig)  # Display the Plotly figure
                 return None, None  # Return None as there's no result variable in plot cases
             else:
-                modified_code = f"result = {code}"
-                exec_locals = {'df': df}
-                exec(modified_code, {}, exec_locals)
+                # Handle cases where no figure is generated
                 result = exec_locals.get('result', None)
-                return result, None  # Return result and None for error_message
+                return result, None
+
         except Exception as e:
             error_message = str(e)
             result = None
