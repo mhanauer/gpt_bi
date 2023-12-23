@@ -4,6 +4,7 @@ import numpy as np
 import os
 import re
 import openai
+import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -36,10 +37,12 @@ This is the metadata of the dataframe:
 {df_head}.
 
 When asked about the data, your response should include the python code describing the
-dataframe `df`.  Do not include sample data. Using the provided dataframe, df, return python code and prefix
+dataframe `df`. If the question requires data visualization, use Matplotlib for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
 the requested python code with {START_CODE_TAG} exactly and suffix the code with {END_CODE_TAG}
 exactly to answer the following question:
 {question}
+
+Please use only Matplotlib for any plotting requirements.
 """
     return prompt
 
@@ -58,11 +61,18 @@ def execute_code(code, df, question, max_retries=5):
     
     while retries <= max_retries:
         try:
-            modified_code = f"result = {code}"
-            exec_locals = {'df': df}
-            exec(modified_code, {}, exec_locals)
-            result = exec_locals.get('result', None)
-            return result, None  # No error, so return result and None for error_message
+            # Check if the code is likely to produce a plot
+            if "plt." in code:
+                exec_locals = {'df': df, 'plt': plt}
+                exec(code, {}, exec_locals)  # Execute the code
+                st.pyplot()  # Display the plot
+                return None, None  # Return None as there's no result variable in plot cases
+            else:
+                modified_code = f"result = {code}"
+                exec_locals = {'df': df}
+                exec(modified_code, {}, exec_locals)
+                result = exec_locals.get('result', None)
+                return result, None  # Return result and None for error_message
         except Exception as e:
             error_message = str(e)
             result = None
@@ -103,7 +113,7 @@ def main():
             result, error_message = execute_code(extracted_code, df, question)
             if error_message:
                 st.write(f"Error: {error_message}")
-            else:
+            else if result is not None:
                 st.write("Result:")
                 st.write(result)
         
