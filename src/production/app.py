@@ -62,7 +62,7 @@ def execute_code(code, df, question, max_retries=5):
     
     while retries <= max_retries:
         try:
-            exec_locals = {'df': df, 'px': px, 'go': go}
+            exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
             exec(code, {}, exec_locals)  # Execute the code
 
             # Check if the figure has been created
@@ -70,10 +70,12 @@ def execute_code(code, df, question, max_retries=5):
             if fig:
                 st.plotly_chart(fig)  # Display the Plotly figure
                 return None, None  # Return None as there's no result variable in plot cases
-            else:
-                # Handle cases where no figure is generated
-                result = exec_locals.get('result', None)
-                return result, None
+
+            # Check for DataFrame or similar output
+            result = exec_locals.get('result', None)
+            if isinstance(result, pd.DataFrame):
+                st.dataframe(result)  # Display the DataFrame
+                return None, None
 
         except Exception as e:
             error_message = str(e)
