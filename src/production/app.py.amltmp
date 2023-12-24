@@ -43,7 +43,7 @@ the requested python code with {START_CODE_TAG} exactly and suffix the code with
 exactly to answer the following question:
 {question}
 
-Please use only Plotly for any plotting requirements.
+When the prompt includes words like plot or graph use only Plotly for any plotting requirements.
 """
     return prompt
 
