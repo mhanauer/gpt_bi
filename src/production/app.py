@@ -88,21 +88,28 @@ def execute_code(code, df, question, max_retries=5):
             
     return None, f"Failed to fix the code after {max_retries} retries. Last error: {error_message}"
 
-# Sample dataframe
-df = pd.DataFrame({
-    'Var1': [1, 2, 3, 4, 5, 6],
-    'Var2': [4, 5, 6, 7, 8, 9],
-    'Gender': ['M', 'F', 'M', 'M', 'F', "M"],
-    'State': ['IN', "NC", 'IN', 'NC', 'IN', 'NC'],
-    'Race': ['W', 'B', 'W', 'B', 'W', "B"]
-})
-
 def main():
     st.title("Ask a question about this data")
-    st.write("This is a demo. It can answer simple questions like what is the sum of column A by Gender. It cannot do more than one 'groupby'")
+    st.write("Upload your own dataset or use the default demo dataset.")
+
+    # File uploader
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    if uploaded_file is not None:
+        # Read the uploaded file into DataFrame
+        df = pd.read_csv(uploaded_file)
+    else:
+        # Use default DataFrame
+        df = pd.DataFrame({
+            'Var1': [1, 2, 3, 4, 5, 6],
+            'Var2': [4, 5, 6, 7, 8, 9],
+            'Gender': ['M', 'F', 'M', 'M', 'F', "M"],
+            'State': ['IN', "NC", 'IN', 'NC', 'IN', 'NC'],
+            'Race': ['W', 'B', 'W', 'B', 'W', "B"]
+        })
+
     st.write("DataFrame Preview (just the first few rows):")
     st.write(df.head())
-    
+
     question = st.text_input("Enter your question about the DataFrame:")
     
     if question:
