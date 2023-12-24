@@ -89,8 +89,9 @@ def execute_code(code, df, question, max_retries=5):
     return None, f"Failed to fix the code after {max_retries} retries. Last error: {error_message}"
 
 def main():
-    st.title("Ask a question about this data")
-    st.write("Upload your own dataset or use the default demo dataset.")
+    st.title("MedeGPT")
+    st.image("mede.png", width=100)  # Adjust the width as needed
+    st.write("Upload your own dataset or use the default demo dataset.  Use the key word Plot at the beginning of any prompt.")
 
     # File uploader
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
