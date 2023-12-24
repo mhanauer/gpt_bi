@@ -90,7 +90,7 @@ def execute_code(code, df, question, max_retries=5):
 
 def main():
     st.title("MedeGPT")
-    st.image("src/production/mede.png", width=100)  # Adjust the width as needed
+    st.image("src/production/mede.png", width=200)  # Adjust the width as needed
     st.write("Upload your own dataset or use the default demo dataset.  Use the key word Plot at the beginning of any prompt.")
 
     # File uploader
