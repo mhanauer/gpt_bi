@@ -122,15 +122,17 @@ def main():
             
             try:
                 extracted_code = extract_python_code(output)
-                st.write("Generated Python Code:")
+                st.write("Generated Python Code (Inspect for syntax errors):")
                 st.code(extracted_code, language='python')
-                
-                result, error_message = execute_code(extracted_code, df, question)
-                if error_message:
-                    st.write(f"Error: {error_message}")
-                elif result is not None:
-                    st.write("Result:")
-                    st.write(result)
+
+                # Add a button to execute the code after manual verification
+                if st.button('Execute Code'):
+                    result, error_message = execute_code(extracted_code, df, question)
+                    if error_message:
+                        st.write(f"Error: {error_message}")
+                    elif result is not None:
+                        st.write("Result:")
+                        st.write(result)
             
             except ValueError as e:
                 st.write(f"Error: {e}")
