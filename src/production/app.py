@@ -56,6 +56,12 @@ def extract_python_code(output):
     else:
         raise ValueError("No valid Python code found in the output")
 
+def prepare_data_description(df):
+    # Extract insights from the DataFrame
+    summary_stats = df.describe().to_string()  # Basic statistical summary
+    trends = "Describe any specific trends or observations here."  # Replace with actual insights
+    return f"Statistical Summary:\n{summary_stats}\nTrends:\n{trends}"
+
 def summarize_results(plot_description):
     """
     This function takes a detailed description of a Plotly figure and returns a written summary.
@@ -89,14 +95,9 @@ def execute_code(code, df, question, max_retries=5):
             if fig:
                 st.plotly_chart(fig)  # Display the Plotly figure
                 
-                # Example of creating a plot description
-                plot_type = type(fig).__name__
-                xaxis_label = fig.layout.xaxis.title.text if fig.layout.xaxis.title else "X-axis"
-                yaxis_label = fig.layout.yaxis.title.text if fig.layout.yaxis.title else "Y-axis"
-                data_description = "Include specific insights here"  # Modify with actual data insights
-
-                detailed_plot_description = f"This is a {plot_type}, showing {xaxis_label} versus {yaxis_label}. {data_description}"
-
+                # Preparing data description from the DataFrame
+                data_description = prepare_data_description(df)
+                detailed_plot_description = f"This plot, showing data based on the DataFrame, is based on the following data:\n{data_description}"
                 summary = summarize_results(detailed_plot_description)
                 st.write("Summary of the Plot:")
                 st.write(summary)
