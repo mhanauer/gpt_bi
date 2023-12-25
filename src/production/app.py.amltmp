@@ -56,15 +56,11 @@ def extract_python_code(output):
     else:
         raise ValueError("No valid Python code found in the output")
 
-def summarize_results(data):
+def summarize_results(plot_description):
     """
-    This function takes a Plotly figure and returns a written summary.
+    This function takes a detailed description of a Plotly figure and returns a written summary.
     """
     try:
-        plot_type = type(data).__name__
-        plot_title = data.layout.title.text if 'title' in data.layout and hasattr(data.layout.title, 'text') else "Unnamed Plot"
-
-        plot_description = f"This is a {plot_type} titled '{plot_title}'."
         prompt = f"Summarize the following plot details:\n{plot_description}"
 
         st.write("Debug: Sending the following description to GPT for summarization:")
@@ -92,7 +88,16 @@ def execute_code(code, df, question, max_retries=5):
             fig = exec_locals.get('fig', None)
             if fig:
                 st.plotly_chart(fig)  # Display the Plotly figure
-                summary = summarize_results(fig)
+                
+                # Example of creating a plot description
+                plot_type = type(fig).__name__
+                xaxis_label = fig.layout.xaxis.title.text if fig.layout.xaxis.title else "X-axis"
+                yaxis_label = fig.layout.yaxis.title.text if fig.layout.yaxis.title else "Y-axis"
+                data_description = "Include specific insights here"  # Modify with actual data insights
+
+                detailed_plot_description = f"This is a {plot_type}, showing {xaxis_label} versus {yaxis_label}. {data_description}"
+
+                summary = summarize_results(detailed_plot_description)
                 st.write("Summary of the Plot:")
                 st.write(summary)
                 return None, None
