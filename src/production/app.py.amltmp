@@ -1,3 +1,6 @@
+Certainly! Here is the complete updated code for your Streamlit application, with enhanced error handling for better debugging and troubleshooting:
+
+```python
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -86,6 +89,9 @@ def execute_code(code, df, question, max_retries=5):
             st.write("No plot was generated.")
             return None, None
 
+        except SyntaxError as e:
+            st.write(f"Syntax error in the code: {e}")
+            return None, f"Syntax error: {e}"
         except Exception as e:
             error_message = str(e)
             retries += 1  # Increment the retry counter
@@ -107,7 +113,9 @@ def main():
 
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
+       
+
+ df = pd.read_csv(uploaded_file)
         st.write("DataFrame Preview (just the first few rows):")
         st.write(df.head())
 
@@ -136,3 +144,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
+This code has been updated to better handle syntax errors and provides more informative feedback during the code execution phase. Remember to carefully inspect the Python code generated from GPT before executing it, especially if you continue to encounter syntax errors.
