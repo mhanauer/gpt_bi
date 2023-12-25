@@ -60,12 +60,8 @@ def summarize_results(data):
     """
     This function takes the data (either a DataFrame or plot details) and returns a written summary.
     """
-    if isinstance(data, pd.DataFrame):
-        data_description = data.describe().to_string()
-        prompt = f"Summarize the following DataFrame statistics:\n{data_description}"
-    else:
-        plot_description = f"This is a {type(data).__name__} with axes: {list(data.layout.xaxis.keys()) + list(data.layout.yaxis.keys())}."
-        prompt = f"Summarize the following plot details:\n{plot_description}"
+    plot_description = f"This is a {type(data).__name__} with axes: {list(data.layout.xaxis.keys()) + list(data.layout.yaxis.keys())}."
+    prompt = f"Summarize the following plot details:\n{plot_description}"
 
     summary = ask_gpt(prompt)  # Use the GPT function to get the summary
     return summary
@@ -79,7 +75,6 @@ def execute_code(code, df, question, max_retries=5):
             exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
             exec(code, {}, exec_locals)  # Execute the code
 
-            # Check if the figure has been created
             fig = exec_locals.get('fig', None)
             if fig:
                 st.plotly_chart(fig)  # Display the Plotly figure
@@ -88,64 +83,56 @@ def execute_code(code, df, question, max_retries=5):
                 st.write(summary)
                 return None, None
 
-            # If the result is not a plot, handle as an error or unexpected output
             st.write("No plot was generated.")
             return None, None
 
         except Exception as e:
             error_message = str(e)
-            result = None
-            df_head = df.head().to_string()
-            new_formatted_prompt = f"With this pandas dataframe (df): {df_head}\nAfter asking this question\n'{question}' \nI ran this code '{code}' \nAnd received this error message \n'{error_message}'. \nPlease provide new correct Python code."
-            output = ask_gpt(new_formatted_prompt)
-            code = extract_python_code(output)  # Update code for the next iteration
             retries += 1  # Increment the retry counter
+            if retries <= max_retries:
+                st.write(f"Attempting to fix the code. Retry {retries}/{max_retries}.")
+                df_head = df.head().to_string()
+                new_formatted_prompt = f"With this pandas dataframe (df): {df_head}\nAfter asking this question\n'{question}' \nI ran this code '{code}' \nAnd received this error message \n'{error_message}'. \nPlease provide new correct Python code."
+                output = ask_gpt(new_formatted_prompt)
+                code = extract_python_code(output)
+            else:
+                st.write(f"Failed to fix the code after {max_retries} retries. Last error: {error_message}")
+                return None, error_message
             
-    return None, f"Failed to fix the code after {max_retries} retries. Last error: {error_message}"
+    return None, None
 
 def main():
-    st.title("MedeGPT")
-    st.image("src/production/mede.png", width=200)  # Adjust the width as needed
-    st.write("Upload your own dataset or use the default demo dataset.  Use the key word Plot at the beginning of any prompt.")
+    st.title("Data Analysis with GPT")
+    st.write("Upload your dataset and enter your question about the data.")
 
-    # File uploader
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
-        # Read the uploaded file into DataFrame
         df = pd.read_csv(uploaded_file)
-    else:
-        # Use default DataFrame
-        df = pd.DataFrame({
-            'Var1': [1, 2, 3, 4, 5, 6],
-            'Var2': [4, 5, 6, 7, 8, 9],
-            'Gender': ['M', 'F', 'M', 'M', 'F', "M"],
-            'State': ['IN', "NC", 'IN', 'NC', 'IN', 'NC'],
-            'Race': ['W', 'B', 'W', 'B', 'W', "B"]
-        })
+        st.write("DataFrame Preview (just the first few rows):")
+        st.write(df.head())
 
-    st.write("DataFrame Preview (just the first few rows):")
-    st.write(df.head())
-
-    question = st.text_input("Enter your question about the DataFrame:")
-    
-    if question:
-        formatted_prompt = generate_python_code_prompt(df, question)
-        output = ask_gpt(formatted_prompt)
+        question = st.text_input("Enter your question about the DataFrame:")
         
-        try:
-            extracted_code = extract_python_code(output)
-            st.write("Generated Python Code:")
-            st.code(extracted_code, language='python')
+        if question:
+            formatted_prompt = generate_python_code_prompt(df, question)
+            output = ask_gpt(formatted_prompt)
             
-            result, error_message = execute_code(extracted_code, df, question)
-            if error_message:
-                st.write(f"Error: {error_message}")
-            elif result is not None:
-                st.write("Result:")
-                st.write(result)
-        
-        except ValueError as e:
-            st.write(f"Error: {e}")
+            try:
+                extracted_code = extract_python_code(output)
+                st.write("Generated Python Code:")
+                st.code(extracted_code, language='python')
+                
+                result, error_message = execute_code(extracted_code, df, question)
+                if error_message:
+                    st.write(f"Error: {error_message}")
+                elif result is not None:
+                    st.write("Result:")
+                    st.write(result)
+            
+            except ValueError as e:
+                st.write(f"Error: {e}")
+    else:
+        st.write("Please upload a CSV file to begin.")
 
 if __name__ == "__main__":
     main()
