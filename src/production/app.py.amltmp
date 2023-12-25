@@ -56,6 +56,22 @@ def extract_python_code(output):
     else:
         raise ValueError("No valid Python code found in the output")
 
+def summarize_results(data):
+    """
+    This function takes the data (either a DataFrame or plot details) and returns a written summary.
+    """
+    if isinstance(data, pd.DataFrame):
+        # Convert DataFrame to a string representation for summary
+        data_description = data.describe().to_string()
+        prompt = f"Summarize the following DataFrame statistics:\n{data_description}"
+    else:
+        # For plots, describe the plot for a summary
+        plot_description = f"This is a {type(data).__name__} with axes: {list(data.layout.xaxis.keys()) + list(data.layout.yaxis.keys())}."
+        prompt = f"Summarize the following plot details:\n{plot_description}"
+
+    summary = ask_gpt(prompt)  # Use the GPT function to get the summary
+    return summary
+
 def execute_code(code, df, question, max_retries=5):
     error_message = None
     retries = 0
@@ -69,12 +85,18 @@ def execute_code(code, df, question, max_retries=5):
             fig = exec_locals.get('fig', None)
             if fig:
                 st.plotly_chart(fig)  # Display the Plotly figure
+                summary = summarize_results(fig)
+                st.write("Summary of the Plot:")
+                st.write(summary)
                 return None, None  # Return None as there's no result variable in plot cases
 
             # Check for DataFrame or similar output
             result = exec_locals.get('result', None)
             if isinstance(result, pd.DataFrame):
                 st.dataframe(result)  # Display the DataFrame
+                summary = summarize_results(result)
+                st.write("Summary of the DataFrame:")
+                st.write(summary)
                 return None, None
 
         except Exception as e:
