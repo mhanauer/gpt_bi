@@ -60,11 +60,22 @@ def summarize_results(data):
     """
     This function takes the data (either a DataFrame or plot details) and returns a written summary.
     """
-    plot_description = f"This is a {type(data).__name__} with axes: {list(data.layout.xaxis.keys()) + list(data.layout.yaxis.keys())}."
-    prompt = f"Summarize the following plot details:\n{plot_description}"
+    try:
+        plot_description = f"This is a {type(data).__name__} with axes: {list(data.layout.xaxis.keys()) + list(data.layout.yaxis.keys())}."
+        prompt = f"Summarize the following plot details:\n{plot_description}"
 
-    summary = ask_gpt(prompt)  # Use the GPT function to get the summary
-    return summary
+        st.write("Debug: Sending the following description to GPT for summarization:")
+        st.write(prompt)
+
+        summary = ask_gpt(prompt)  # Use the GPT function to get the summary
+
+        st.write("Debug: Received the following summary from GPT:")
+        st.write(summary)
+
+        return summary
+    except Exception as e:
+        st.write(f"An error occurred while summarizing the plot: {e}")
+        return "Error in generating summary."
 
 def execute_code(code, df, question, max_retries=5):
     error_message = None
@@ -125,7 +136,6 @@ def main():
                 st.write("Generated Python Code (Inspect for syntax errors):")
                 st.code(extracted_code, language='python')
 
-                # Add a button to execute the code after manual verification
                 if st.button('Execute Code'):
                     result, error_message = execute_code(extracted_code, df, question)
                     if error_message:
