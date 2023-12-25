@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -111,34 +110,32 @@ def main():
 
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
-       
+        df = pd.read_csv(uploaded_file)
+        st.write("DataFrame Preview (just the first few rows):")
+        st.write(df.head())
 
-    df = pd.read_csv(uploaded_file)
-            st.write("DataFrame Preview (just the first few rows):")
-            st.write(df.head())
-
-            question = st.text_input("Enter your question about the DataFrame:")
+        question = st.text_input("Enter your question about the DataFrame:")
+        
+        if question:
+            formatted_prompt = generate_python_code_prompt(df, question)
+            output = ask_gpt(formatted_prompt)
             
-            if question:
-                formatted_prompt = generate_python_code_prompt(df, question)
-                output = ask_gpt(formatted_prompt)
+            try:
+                extracted_code = extract_python_code(output)
+                st.write("Generated Python Code:")
+                st.code(extracted_code, language='python')
                 
-                try:
-                    extracted_code = extract_python_code(output)
-                    st.write("Generated Python Code:")
-                    st.code(extracted_code, language='python')
-                    
-                    result, error_message = execute_code(extracted_code, df, question)
-                    if error_message:
-                        st.write(f"Error: {error_message}")
-                    elif result is not None:
-                        st.write("Result:")
-                        st.write(result)
-                
-                except ValueError as e:
-                    st.write(f"Error: {e}")
-        else:
-            st.write("Please upload a CSV file to begin.")
+                result, error_message = execute_code(extracted_code, df, question)
+                if error_message:
+                    st.write(f"Error: {error_message}")
+                elif result is not None:
+                    st.write("Result:")
+                    st.write(result)
+            
+            except ValueError as e:
+                st.write(f"Error: {e}")
+    else:
+        st.write("Please upload a CSV file to begin.")
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
