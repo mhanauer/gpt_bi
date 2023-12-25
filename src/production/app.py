@@ -58,10 +58,13 @@ def extract_python_code(output):
 
 def summarize_results(data):
     """
-    This function takes the data (either a DataFrame or plot details) and returns a written summary.
+    This function takes a Plotly figure and returns a written summary.
     """
     try:
-        plot_description = f"This is a {type(data).__name__} with axes: {list(data.layout.xaxis.keys()) + list(data.layout.yaxis.keys())}."
+        plot_type = type(data).__name__
+        plot_title = data.layout.title.text if 'title' in data.layout and hasattr(data.layout.title, 'text') else "Unnamed Plot"
+
+        plot_description = f"This is a {plot_type} titled '{plot_title}'."
         prompt = f"Summarize the following plot details:\n{plot_description}"
 
         st.write("Debug: Sending the following description to GPT for summarization:")
