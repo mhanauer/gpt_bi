@@ -1,6 +1,4 @@
-Certainly! Here is the complete updated code for your Streamlit application, with enhanced error handling for better debugging and troubleshooting:
 
-```python
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -144,6 +142,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
-
-This code has been updated to better handle syntax errors and provides more informative feedback during the code execution phase. Remember to carefully inspect the Python code generated from GPT before executing it, especially if you continue to encounter syntax errors.
