@@ -96,11 +96,11 @@ def execute_code(code, df, question, max_retries=5):
                 st.plotly_chart(fig)  # Display the Plotly figure
                 
                 # Preparing data description from the DataFrame
-                data_description = prepare_data_description(df)
-                detailed_plot_description = f"This plot, showing data based on the DataFrame, is based on the following data:\n{data_description}"
-                summary = summarize_results(detailed_plot_description)
-                st.write("Summary of the Plot:")
-                st.write(summary)
+                #data_description = prepare_data_description(df)
+                #detailed_plot_description = f"This plot, showing data based on the DataFrame, is based on the following data:\n{data_description}"
+                #summary = summarize_results(detailed_plot_description)
+                #st.write("Summary of the Plot:")
+                #st.write(summary)
                 return None, None
 
             st.write("No plot was generated.")
@@ -128,7 +128,7 @@ def main():
     st.title("MedeGPT")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     logo_path = os.path.join(current_dir, 'mede.png')
-    st.image(logo_path, width=100)  # Adjust the path and width as needed
+    st.image(logo_path, width=300)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
 
@@ -165,3 +165,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
