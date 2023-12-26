@@ -1,8 +1,9 @@
+Code
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import os
-import re
 import openai
 import plotly.express as px
 import plotly.graph_objects as go
@@ -56,73 +57,19 @@ def extract_python_code(output):
     else:
         raise ValueError("No valid Python code found in the output")
 
-def prepare_data_description(df):
-    # Extract insights from the DataFrame
-    summary_stats = df.describe().to_string()  # Basic statistical summary
-    trends = "Describe any specific trends or observations here."  # Replace with actual insights
-    return f"Statistical Summary:\n{summary_stats}\nTrends:\n{trends}"
-
-def summarize_results(plot_description):
-    """
-    This function takes a detailed description of a Plotly figure and returns a written summary.
-    """
+def execute_code(code, df):
     try:
-        prompt = f"Summarize the following plot details:\n{plot_description}"
+        exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
+        exec(code, {}, exec_locals)  # Execute the code
 
-        st.write("Debug: Sending the following description to GPT for summarization:")
-        st.write(prompt)
-
-        summary = ask_gpt(prompt)  # Use the GPT function to get the summary
-
-        st.write("Debug: Received the following summary from GPT:")
-        st.write(summary)
-
-        return summary
-    except Exception as e:
-        st.write(f"An error occurred while summarizing the plot: {e}")
-        return "Error in generating summary."
-
-def execute_code(code, df, question, max_retries=5):
-    error_message = None
-    retries = 0
-    
-    while retries <= max_retries:
-        try:
-            exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
-            exec(code, {}, exec_locals)  # Execute the code
-
-            fig = exec_locals.get('fig', None)
-            if fig:
-                st.plotly_chart(fig)  # Display the Plotly figure
-                
-                # Preparing data description from the DataFrame
-                data_description = prepare_data_description(df)
-                detailed_plot_description = f"This plot, showing data based on the DataFrame, is based on the following data:\n{data_description}"
-                summary = summarize_results(detailed_plot_description)
-                st.write("Summary of the Plot:")
-                st.write(summary)
-                return None, None
-
+        fig = exec_locals.get('fig', None)
+        if fig:
+            st.plotly_chart(fig)  # Display the Plotly figure
+        else:
             st.write("No plot was generated.")
-            return None, None
 
-        except SyntaxError as e:
-            st.write(f"Syntax error in the code: {e}")
-            return None, f"Syntax error: {e}"
-        except Exception as e:
-            error_message = str(e)
-            retries += 1  # Increment the retry counter
-            if retries <= max_retries:
-                st.write(f"Attempting to fix the code. Retry {retries}/{max_retries}.")
-                df_head = df.head().to_string()
-                new_formatted_prompt = f"With this pandas dataframe (df): {df_head}\nAfter asking this question\n'{question}' \nI ran this code '{code}' \nAnd received this error message \n'{error_message}'. \nPlease provide new correct Python code."
-                output = ask_gpt(new_formatted_prompt)
-                code = extract_python_code(output)
-            else:
-                st.write(f"Failed to fix the code after {max_retries} retries. Last error: {error_message}")
-                return None, error_message
-            
-    return None, None
+    except Exception as e:
+        st.write(f"An error occurred while executing the code: {e}")
 
 def main():
     st.title("Data Analysis with GPT")
@@ -145,13 +92,8 @@ def main():
                 st.write("Generated Python Code (Inspect for syntax errors):")
                 st.code(extracted_code, language='python')
 
-                if st.button('Execute Code'):
-                    result, error_message = execute_code(extracted_code, df, question)
-                    if error_message:
-                        st.write(f"Error: {error_message}")
-                    elif result is not None:
-                        st.write("Result:")
-                        st.write(result)
+                # Automatically execute the code without asking the user
+                execute_code(extracted_code, df)
             
             except ValueError as e:
                 st.write(f"Error: {e}")
