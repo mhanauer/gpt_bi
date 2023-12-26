@@ -8,11 +8,10 @@ import plotly.graph_objects as go
 import re
 
 # Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
+api_key = st.secrets["OPENAI_API_KEY"]
 
 # Set up OpenAI client
-client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = openai.OpenAI(api_key=api_key)
 
 def ask_gpt(prompt):
     try:
