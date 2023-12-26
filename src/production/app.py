@@ -144,6 +144,7 @@ def main():
             formatted_prompt = generate_python_code_prompt(df, question)
             output = ask_gpt(formatted_prompt)
             
+            
             try:
                 extracted_code = extract_python_code(output)
                 st.write("Generated Python Code (Inspect for syntax errors):")
