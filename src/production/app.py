@@ -106,6 +106,7 @@ def execute_code(code, df, question, max_retries=5):
             st.write("No plot was generated.")
             return None, None
 
+
         except SyntaxError as e:
             st.write(f"Syntax error in the code: {e}")
             return None, f"Syntax error: {e}"
@@ -128,7 +129,7 @@ def main():
     st.title("MedeGPT")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     logo_path = os.path.join(current_dir, 'mede.png')
-    st.image(logo_path, width=100)  # Adjust the path and width as needed
+    st.image(logo_path, width=300)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
 
