@@ -56,31 +56,6 @@ def extract_python_code(output):
     else:
         raise ValueError("No valid Python code found in the output")
 
-def prepare_data_description(df):
-    # Extract insights from the DataFrame
-    summary_stats = df.describe().to_string()  # Basic statistical summary
-    trends = "Describe any specific trends or observations here."  # Replace with actual insights
-    return f"Statistical Summary:\n{summary_stats}\nTrends:\n{trends}"
-
-def summarize_results(plot_description):
-    """
-    This function takes a detailed description of a Plotly figure and returns a written summary.
-    """
-    try:
-        prompt = f"Summarize the following plot details:\n{plot_description}"
-
-        st.write("Debug: Sending the following description to GPT for summarization:")
-        st.write(prompt)
-
-        summary = ask_gpt(prompt)  # Use the GPT function to get the summary
-
-        st.write("Debug: Received the following summary from GPT:")
-        st.write(summary)
-
-        return summary
-    except Exception as e:
-        st.write(f"An error occurred while summarizing the plot: {e}")
-        return "Error in generating summary."
 
 def execute_code(code, df, question, max_retries=5):
     error_message = None
@@ -95,12 +70,6 @@ def execute_code(code, df, question, max_retries=5):
             if fig:
                 st.plotly_chart(fig)  # Display the Plotly figure
                 
-                # Preparing data description from the DataFrame
-                #data_description = prepare_data_description(df)
-                #detailed_plot_description = f"This plot, showing data based on the DataFrame, is based on the following data:\n{data_description}"
-                #summary = summarize_results(detailed_plot_description)
-                #st.write("Summary of the Plot:")
-                #st.write(summary)
                 return None, None
 
             st.write("No plot was generated.")
