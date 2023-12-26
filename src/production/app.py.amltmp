@@ -1,5 +1,3 @@
-Code
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -92,8 +90,8 @@ def main():
                 st.write("Generated Python Code (Inspect for syntax errors):")
                 st.code(extracted_code, language='python')
 
-                # Automatically execute the code without asking the user
-                execute_code(extracted_code, df)
+                if st.button('Execute Code'):
+                    execute_code(extracted_code, df)
             
             except ValueError as e:
                 st.write(f"Error: {e}")
