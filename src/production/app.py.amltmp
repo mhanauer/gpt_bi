@@ -126,7 +126,9 @@ def execute_code(code, df, question, max_retries=5):
 
 def main():
     st.title("MedeGPT")
-    #st.image("mede.png", width=100)  # Adjust the path and width as needed
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, 'mede.png')
+    st.image(logo_path, width=100)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
 
