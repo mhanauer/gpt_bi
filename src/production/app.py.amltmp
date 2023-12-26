@@ -5,6 +5,7 @@ import os
 import openai
 import plotly.express as px
 import plotly.graph_objects as go
+import re
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -21,38 +22,34 @@ def ask_gpt(prompt):
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"An error occurred: {e}"
+        st.error(f"An error occurred: {e}")
+        return None
 
 def generate_python_code_prompt(df, question):
-    START_CODE_TAG = "```"
-    END_CODE_TAG = "```"
     num_rows, num_columns = df.shape
     df_head = df.head().to_string()
     prompt = f"""
-    You are provided with a pandas dataframe (df) with {num_rows} rows and {num_columns} columns.
-    This is the metadata of the dataframe:
-    {df_head}.
+    Here is a pandas dataframe (df) with {num_rows} rows and {num_columns} columns:
+    {df_head}
 
-    When asked about the data, your response should include the python code describing the
-    dataframe `df`. If the question requires data visualization, use Plotly for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
-    the requested python code with {START_CODE_TAG} exactly and suffix the code with {END_CODE_TAG}
-    exactly to answer the following question:
+    Please provide the Python code to answer the following question about the dataframe:
     {question}
-
-    When the prompt includes words like plot or graph use only Plotly for any plotting requirements.
     """
     return prompt
 
 def extract_python_code(output):
+    if output is None:
+        return ""
     match = re.search(r'```python\n(.*?)(```|$)', output, re.DOTALL)
     if match:
         code = match.group(1).strip()
         cleaned_code = '\n'.join([line for line in code.split('\n') if 'read_csv' not in line])
         return cleaned_code
     else:
-        raise ValueError("No valid Python code found in the output")
+        st.error("No valid Python code block found in the GPT response.")
+        return ""
 
-def execute_code(code, df, question):
+def execute_code(code, df):
     try:
         exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
         exec(code, {}, exec_locals)  # Execute the code
@@ -62,16 +59,12 @@ def execute_code(code, df, question):
             st.plotly_chart(fig)  # Display the Plotly figure
 
     except Exception as e:
-        st.write(f"An error occurred while executing the code: {e}")
+        st.error(f"An error occurred while executing the code: {e}")
 
 def main():
     st.title("MedeGPT")
-    # Assuming your Streamlit app is being run from the 'src/production' directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
     logo_path = os.path.join(current_dir, 'mede.png')
-
-    st.image(logo_path, width=300)  # Adjust the width as needed
-
 
     st.write("Upload your dataset and enter your question about the data.")
     
@@ -87,8 +80,10 @@ def main():
             formatted_prompt = generate_python_code_prompt(df, question)
             output = ask_gpt(formatted_prompt)
             extracted_code = extract_python_code(output)
-            st.code(extracted_code, language='python')
-            execute_code(extracted_code, df, question)
+            
+            if extracted_code:
+                st.code(extracted_code, language='python')
+                execute_code(extracted_code, df)
 
 if __name__ == "__main__":
     main()
