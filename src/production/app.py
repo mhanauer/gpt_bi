@@ -126,7 +126,7 @@ def execute_code(code, df, question, max_retries=5):
 
 def main():
     st.title("MedeGPT")
-    st.image("mede.png", width=100)  # Adjust the path and width as needed
+    #st.image("mede.png", width=100)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
 
