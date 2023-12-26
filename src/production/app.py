@@ -125,8 +125,10 @@ def execute_code(code, df, question, max_retries=5):
     return None, None
 
 def main():
-    st.title("Data Analysis with GPT")
+    st.title("MedeGPT")
+    st.image("mede.png", width=100)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
+    
 
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
