@@ -14,86 +14,33 @@ api_key = st.secrets["OPENAI_API_KEY"]
 # Set up OpenAI client
 client = openai.OpenAI(api_key=api_key)
 
-def ask_gpt(prompt):
+# Existing functions (ask_gpt, generate_python_code_prompt, extract_python_code, execute_code) go here
+
+def analyze_data_with_gpt(df, question):
     """
-    This function takes a prompt and returns the response from OpenAI's GPT model.
+    This function takes a question about a DataFrame and uses GPT to generate and execute Python code for the analysis.
     """
+    # Generate a Python code prompt for GPT based on the question
+    formatted_prompt = generate_python_code_prompt(df, question)
+
     try:
-        response = client.chat.completions.create(
-            model="gpt-4",  # Replace with your desired GPT model
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
+        # Get Python code from GPT
+        output = ask_gpt(formatted_prompt)
+        generated_code = extract_python_code(output)
+
+        # Execute the generated code
+        exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
+        exec(generated_code, {}, exec_locals)  # Execute the code
+
+        # Retrieve the result
+        result = exec_locals.get('result', None)
+        if result is None:
+            raise ValueError("The executed code did not produce a result variable.")
+
+        return result
+
     except Exception as e:
         return f"An error occurred: {e}"
-
-def generate_python_code_prompt(df, question):
-    START_CODE_TAG = "```"
-    END_CODE_TAG = "```"
-    num_rows, num_columns = df.shape
-    # Generate a string representation of column names and their types
-    columns_info = "\n".join([f"{col}: {dtype}" for col, dtype in df.dtypes.items()])
-    prompt = f"""
-You are provided with a pandas dataframe (df) with {num_rows} rows and {num_columns} columns.
-This is the metadata of the dataframe:
-{columns_info}.
-
-When asked about the data, your response should include the python code describing the
-dataframe `df`. If the question requires data visualization, use Plotly for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
-the requested python code with {START_CODE_TAG} exactly and suffix the code with {END_CODE_TAG}
-exactly to answer the following question:
-{question}
-
-When the prompt includes words like plot or graph use only Plotly for any plotting requirements.
-"""
-    return prompt
-
-
-def extract_python_code(output):
-    match = re.search(r'```python\n(.*?)(```|$)', output, re.DOTALL)
-    if match:
-        code = match.group(1).strip()
-        cleaned_code = '\n'.join([line for line in code.split('\n') if 'read_csv' not in line])
-        return cleaned_code
-    else:
-        raise ValueError("No valid Python code found in the output")
-
-
-def execute_code(code, df, question, max_retries=5):
-    error_message = None
-    retries = 0
-    
-    while retries <= max_retries:
-        try:
-            exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
-            exec(code, {}, exec_locals)  # Execute the code
-
-            fig = exec_locals.get('fig', None)
-            if fig:
-                st.plotly_chart(fig)  # Display the Plotly figure
-                
-                return None, None
-
-            st.write("No plot was generated.")
-            return None, None
-
-        except SyntaxError as e:
-            st.write(f"Syntax error in the code: {e}")
-            return None, f"Syntax error: {e}"
-        except Exception as e:
-            error_message = str(e)
-            retries += 1  # Increment the retry counter
-            if retries <= max_retries:
-                st.write(f"Attempting to fix the code. Retry {retries}/{max_retries}.")
-                df_head = df.head().to_string()
-                new_formatted_prompt = f"With this pandas dataframe (df): {df_head}\nAfter asking this question\n'{question}' \nI ran this code '{code}' \nAnd received this error message \n'{error_message}'. \nPlease provide new correct Python code."
-                output = ask_gpt(new_formatted_prompt)
-                code = extract_python_code(output)
-            else:
-                st.write(f"Failed to fix the code after {max_retries} retries. Last error: {error_message}")
-                return None, error_message
-            
-    return None, None
 
 def main():
     st.title("MedeGPT")
@@ -102,7 +49,6 @@ def main():
     st.image(logo_path, width=300)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
-
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
@@ -115,19 +61,21 @@ def main():
             formatted_prompt = generate_python_code_prompt(df, question)
             output = ask_gpt(formatted_prompt)
             
-            
             try:
                 extracted_code = extract_python_code(output)
                 st.write("Generated Python Code (Inspect for syntax errors):")
                 st.code(extracted_code, language='python')
 
                 if st.button('Execute Code'):
-                    result, error_message = execute_code(extracted_code, df, question)
-                    if error_message:
-                        st.write(f"Error: {error_message}")
-                    elif result is not None:
-                        st.write("Result:")
-                        st.write(result)
+                    # Use the analyze_data_with_gpt function to execute the code and get results
+                    results = analyze_data_with_gpt(df, question)
+
+                    if isinstance(results, pd.DataFrame) or isinstance(results, pd.Series):
+                        st.write("Analysis Results:")
+                        st.write(results)
+                    else:
+                        st.write("Results:")
+                        st.write(results)
             
             except ValueError as e:
                 st.write(f"Error: {e}")
@@ -136,4 +84,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
