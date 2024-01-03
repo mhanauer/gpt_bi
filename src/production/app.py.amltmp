@@ -31,11 +31,12 @@ def generate_python_code_prompt(df, question):
     START_CODE_TAG = "```"
     END_CODE_TAG = "```"
     num_rows, num_columns = df.shape
-    df_head = df.head().to_string()
+    # Generate a string representation of column names and their types
+    columns_info = "\n".join([f"{col}: {dtype}" for col, dtype in df.dtypes.items()])
     prompt = f"""
 You are provided with a pandas dataframe (df) with {num_rows} rows and {num_columns} columns.
 This is the metadata of the dataframe:
-{df_head}.
+{columns_info}.
 
 When asked about the data, your response should include the python code describing the
 dataframe `df`. If the question requires data visualization, use Plotly for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
@@ -46,6 +47,7 @@ exactly to answer the following question:
 When the prompt includes words like plot or graph use only Plotly for any plotting requirements.
 """
     return prompt
+
 
 def extract_python_code(output):
     match = re.search(r'```python\n(.*?)(```|$)', output, re.DOTALL)
