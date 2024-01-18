@@ -109,7 +109,7 @@ def main():
         st.write("DataFrame Preview (just the first few rows):")
         st.write(df.head())
 
-        question = st.text_input("Enter your question about the DataFrame:")
+        question = st.text_input("Enter your question about the DataFrame (start each prompt with the word Plot):")
         
         if question:
             formatted_prompt = generate_python_code_prompt(df, question)
