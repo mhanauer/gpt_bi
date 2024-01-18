@@ -105,7 +105,7 @@ def main():
 
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
+        df = pd.read_csv(uploaded_file) 
         st.write("DataFrame Preview (just the first few rows):")
         st.write(df.head())
 
