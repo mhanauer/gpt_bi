@@ -31,11 +31,8 @@ def generate_python_code_prompt(df, question):
     START_CODE_TAG = "```"
     END_CODE_TAG = "```"
     num_rows, num_columns = df.shape
+    # Generate a string representation of column names and their types
     columns_info = "\n".join([f"{col}: {dtype}" for col, dtype in df.dtypes.items()])
-
-    # Prepend "Plot: " to the user's question
-    modified_question = "Plot: " + question
-
     prompt = f"""
 You are provided with a pandas dataframe (df) with {num_rows} rows and {num_columns} columns.
 This is the metadata of the dataframe:
@@ -45,9 +42,9 @@ When asked about the data, your response should include the python code describi
 dataframe `df`. If the question requires data visualization, use Plotly for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
 the requested python code with {START_CODE_TAG} exactly and suffix the code with {END_CODE_TAG}
 exactly to answer the following question:
-{modified_question}
+{question}
 
-When the prompt includes words like plot or graph use only Plotly for any plotting requirements.
+Plot any prompts using Plotly.
 """
     return prompt
 
@@ -61,35 +58,51 @@ def extract_python_code(output):
     else:
         raise ValueError("No valid Python code found in the output")
 
-def analyze_data_with_gpt(df, question):
-    """
-    This function takes a question about a DataFrame and uses GPT to generate and execute Python code for the analysis.
-    """
-    formatted_prompt = generate_python_code_prompt(df, question)
 
-    try:
-        output = ask_gpt(formatted_prompt)
-        generated_code = extract_python_code(output)
+def execute_code(code, df, question, max_retries=5):
+    error_message = None
+    retries = 0
+    
+    while retries <= max_retries:
+        try:
+            exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
+            exec(code, {}, exec_locals)  # Execute the code
 
-        exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
-        exec(generated_code, {}, exec_locals)
+            fig = exec_locals.get('fig', None)
+            if fig:
+                st.plotly_chart(fig)  # Display the Plotly figure
+                
+                return None, None
 
-        result = exec_locals.get('result', None)
-        if result is None:
-            raise ValueError("The executed code did not produce a result variable.")
+            st.write("No plot was generated.")
+            return None, None
 
-        return result
-
-    except Exception as e:
-        return f"An error occurred: {e}"
+        except SyntaxError as e:
+            st.write(f"Syntax error in the code: {e}")
+            return None, f"Syntax error: {e}"
+        except Exception as e:
+            error_message = str(e)
+            retries += 1  # Increment the retry counter
+            if retries <= max_retries:
+                st.write(f"Attempting to fix the code. Retry {retries}/{max_retries}.")
+                df_head = df.head().to_string()
+                new_formatted_prompt = f"With this pandas dataframe (df): {df_head}\nAfter asking this question\n'{question}' \nI ran this code '{code}' \nAnd received this error message \n'{error_message}'. \nPlease provide new correct Python code."
+                output = ask_gpt(new_formatted_prompt)
+                code = extract_python_code(output)
+            else:
+                st.write(f"Failed to fix the code after {max_retries} retries. Last error: {error_message}")
+                return None, error_message
+            
+    return None, None
 
 def main():
     st.title("MedeGPT")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     logo_path = os.path.join(current_dir, 'mede.png')
-    st.image(logo_path, width=300)
+    st.image(logo_path, width=300)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
+
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
@@ -102,20 +115,19 @@ def main():
             formatted_prompt = generate_python_code_prompt(df, question)
             output = ask_gpt(formatted_prompt)
             
+            
             try:
                 extracted_code = extract_python_code(output)
                 st.write("Generated Python Code (Inspect for syntax errors):")
                 st.code(extracted_code, language='python')
 
                 if st.button('Execute Code'):
-                    results = analyze_data_with_gpt(df, question)
-
-                    if isinstance(results, pd.DataFrame) or isinstance(results, pd.Series):
-                        st.write("Analysis Results:")
-                        st.write(results)
-                    else:
-                        st.write("Results:")
-                        st.write(results)
+                    result, error_message = execute_code(extracted_code, df, question)
+                    if error_message:
+                        st.write(f"Error: {error_message}")
+                    elif result is not None:
+                        st.write("Result:")
+                        st.write(result)
             
             except ValueError as e:
                 st.write(f"Error: {e}")
