@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -27,7 +28,7 @@ def ask_gpt(prompt):
     except Exception as e:
         return f"An error occurred: {e}"
 
-def generate_python_code_prompt(df, question):
+def generate_python_code_prompt(df, question, extra_instructions):
     START_CODE_TAG = "```"
     END_CODE_TAG = "```"
     num_rows, num_columns = df.shape
@@ -37,6 +38,7 @@ def generate_python_code_prompt(df, question):
 You are provided with a pandas dataframe (df) with {num_rows} rows and {num_columns} columns.
 This is the metadata of the dataframe:
 {columns_info}.
+{extra_instructions}
 
 When asked about the data, your response should include the python code describing the
 dataframe `df`. If the question requires data visualization, use Plotly for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
@@ -48,7 +50,6 @@ When the prompt includes words like plot or graph use only Plotly for any plotti
 """
     return prompt
 
-
 def extract_python_code(output):
     match = re.search(r'```python\n(.*?)(```|$)', output, re.DOTALL)
     if match:
@@ -57,7 +58,6 @@ def extract_python_code(output):
         return cleaned_code
     else:
         raise ValueError("No valid Python code found in the output")
-
 
 def execute_code(code, df, question, max_retries=5):
     error_message = None
@@ -102,19 +102,22 @@ def main():
     st.image(logo_path, width=300)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
-
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file) 
+
+
         st.write("DataFrame Preview (just the first few rows):")
         st.write(df.head())
 
         question = st.text_input("Enter your question about the DataFrame (start each prompt with the word Plot):")
+        extra_instructions = st.text_area("Enter additional prompt engineering instructions:", 
+                                          value="",
+                                          help="You can specify additional details or constraints for the GPT model here.")
         
         if question:
-            formatted_prompt = generate_python_code_prompt(df, question)
+            formatted_prompt = generate_python_code_prompt(df, question, extra_instructions)
             output = ask_gpt(formatted_prompt)
-            
             
             try:
                 extracted_code = extract_python_code(output)
@@ -136,4 +139,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
