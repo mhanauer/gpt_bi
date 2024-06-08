@@ -96,9 +96,9 @@ def execute_code(code, df, question, max_retries=5):
     return None, None
 
 def main():
-    st.title("MedeGPT")
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = os.path.join(current_dir, 'mede.png')
+    st.title("GenBI HIMMS")
+    #current_dir = os.path.dirname(os.path.abspath(__file__))
+    #logo_path = os.path.join(current_dir, 'mede.png')
     st.image(logo_path, width=300)  # Adjust the path and width as needed
     st.write("Upload your dataset and enter your question about the data.")
     
