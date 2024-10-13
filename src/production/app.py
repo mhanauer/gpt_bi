@@ -1,80 +1,138 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
+import re
 import openai
+import plotly.express as px
+import plotly.graph_objects as go
+from dotenv import load_dotenv
 
-# Set OpenAI API Key (replace with your actual key)
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# Load environment variables
+api_key = st.secrets["OPENAI_API_KEY"]
 
-# Generate Simulated Claims Data
-def generate_claims_data(n=100):
-    claims_data = {
-        'ClaimID': [f"C{str(i).zfill(4)}" for i in range(1, n+1)],  # Simple ClaimID like C0001
-        'MemberID': np.random.randint(1000, 1100, n),
-        'ClaimAmount': np.round(np.random.uniform(100, 5000, n), 2),
-        'DateOfClaim': pd.date_range(start='2023-01-01', periods=n).strftime('%Y-%m-%d'),
-        'ClaimStatus': np.random.choice(['Approved', 'Pending', 'Rejected'], n)
-    }
-    return pd.DataFrame(claims_data)
+# Set up OpenAI client
+client = openai.OpenAI(api_key=api_key)
 
-# Generate Simulated Enrollment Data
-def generate_enrollment_data(n=100):
-    enrollment_data = {
-        'MemberID': np.random.randint(1000, 1100, n),
-        'MemberName': [f"Member_{str(i).zfill(4)}" for i in range(1, n+1)],  # Simple MemberName like Member_0001
-        'DateOfEnrollment': pd.date_range(start='2015-01-01', periods=n).strftime('%Y-%m-%d'),
-        'PlanType': np.random.choice(['HMO', 'PPO', 'EPO', 'POS'], n)
-    }
-    return pd.DataFrame(enrollment_data)
+def ask_gpt(prompt):
+    """
+    This function takes a prompt and returns the response from OpenAI's GPT model.
+    """
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",  # Replace with your desired GPT model
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"An error occurred: {e}"
 
-# Load the simulated claims and enrollment datasets
-@st.cache_data
-def load_data():
-    claims_df = generate_claims_data()
-    enrollment_df = generate_enrollment_data()
-    return claims_df, enrollment_df
+def generate_python_code_prompt(df, question):
+    START_CODE_TAG = "```"
+    END_CODE_TAG = "```"
+    num_rows, num_columns = df.shape
+    # Generate a string representation of column names and their types
+    columns_info = "\n".join([f"{col}: {dtype}" for col, dtype in df.dtypes.items()])
+    prompt = f"""
+You are provided with a pandas dataframe (df) with {num_rows} rows and {num_columns} columns.
+This is the metadata of the dataframe:
+{columns_info}.
 
-claims_df, enrollment_df = load_data()
+When asked about the data, your response should include the python code describing the
+dataframe `df`. If the question requires data visualization, use Plotly for plotting. Do not include sample data. Using the provided dataframe, df, return python code and prefix
+the requested python code with {START_CODE_TAG} exactly and suffix the code with {END_CODE_TAG}
+exactly to answer the following question:
+{question}
 
-# Function to process the user's question using GPT-4 (with the new chat completion API)
-def ask_question(question, claims_df, enrollment_df):
-    # Combine the two datasets into a prompt
-    combined_data = (
-        f"Claims Data:\n{claims_df.head(10).to_string(index=False)}\n\n"
-        f"Enrollment Data:\n{enrollment_df.head(10).to_string(index=False)}\n"
-    )
-    prompt = f"{combined_data}\n\nUser Question: {question}\nAnswer based on the data:"
+When the prompt includes words like plot or graph use only Plotly for any plotting requirements.
+"""
+    return prompt
 
-    # Call the OpenAI Chat API using the correct method
-    response = openai.ChatCompletion.create(
-        model="gpt-4",  # Using GPT-4 model
-        messages=[
-            {"role": "system", "content": "You are an expert in healthcare claims and enrollment data."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.2,
-        max_tokens=150
-    )
 
-    # Extract and return the response text
-    return response.choices[0].message['content'].strip()
+def extract_python_code(output):
+    match = re.search(r'```python\n(.*?)(```|$)', output, re.DOTALL)
+    if match:
+        code = match.group(1).strip()
+        cleaned_code = '\n'.join([line for line in code.split('\n') if 'read_csv' not in line])
+        return cleaned_code
+    else:
+        raise ValueError("No valid Python code found in the output")
 
-# Streamlit UI
-st.title("AI Agent for Simulated Claims and Enrollment Data")
 
-st.write("This app allows you to ask questions about claims and enrollment data and get answers.")
+def execute_code(code, df, question, max_retries=5):
+    error_message = None
+    retries = 0
+    
+    while retries <= max_retries:
+        try:
+            exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
+            exec(code, {}, exec_locals)  # Execute the code
 
-# Display the datasets
-if st.checkbox("Show Claims Data"):
-    st.dataframe(claims_df)
+            fig = exec_locals.get('fig', None)
+            if fig:
+                st.plotly_chart(fig)  # Display the Plotly figure
+                
+                return None, None
 
-if st.checkbox("Show Enrollment Data"):
-    st.dataframe(enrollment_df)
+            st.write("No plot was generated.")
+            return None, None
 
-# Input box for the user to ask questions
-question = st.text_input("Ask any question about the claims or enrollment data:")
+        except SyntaxError as e:
+            st.write(f"Syntax error in the code: {e}")
+            return None, f"Syntax error: {e}"
+        except Exception as e:
+            error_message = str(e)
+            retries += 1  # Increment the retry counter
+            if retries <= max_retries:
+                st.write(f"Attempting to fix the code. Retry {retries}/{max_retries}.")
+                df_head = df.head().to_string()
+                new_formatted_prompt = f"With this pandas dataframe (df): {df_head}\nAfter asking this question\n'{question}' \nI ran this code '{code}' \nAnd received this error message \n'{error_message}'. \nPlease provide new correct Python code."
+                output = ask_gpt(new_formatted_prompt)
+                code = extract_python_code(output)
+            else:
+                st.write(f"Failed to fix the code after {max_retries} retries. Last error: {error_message}")
+                return None, error_message
+            
+    return None, None
 
-if question:
-    answer = ask_question(question, claims_df, enrollment_df)
-    st.write("Answer:")
-    st.write(answer)
+def main():
+    st.title("MedeGPT")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, 'mede.png')
+    st.image(logo_path, width=300)  # Adjust the path and width as needed
+    st.write("Upload your dataset and enter your question about the data.")
+    
+
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file) 
+        st.write("DataFrame Preview (just the first few rows):")
+        st.write(df.head())
+
+        question = st.text_input("Enter your question about the DataFrame (start each prompt with the word Plot):")
+        
+        if question:
+            formatted_prompt = generate_python_code_prompt(df, question)
+            output = ask_gpt(formatted_prompt)
+            
+            
+            try:
+                extracted_code = extract_python_code(output)
+                st.write("Generated Python Code (Inspect for syntax errors):")
+                st.code(extracted_code, language='python')
+
+                if st.button('Execute Code'):
+                    result, error_message = execute_code(extracted_code, df, question)
+                    if error_message:
+                        st.write(f"Error: {error_message}")
+                    elif result is not None:
+                        st.write("Result:")
+                        st.write(result)
+            
+            except ValueError as e:
+                st.write(f"Error: {e}")
+    else:
+        st.write("Please upload a CSV file to begin.")
+
+if __name__ == "__main__":
+    main()
