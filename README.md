@@ -1,7 +1,3 @@
-Creating an effective README for your product is crucial as it serves as the first point of interaction with potential users and contributors. Here's a draft for a README description based on the nature of your product, which is a generative bioinformatics tool:
-
----
-
 # Mede-GPT
 
 Welcome to Mede-GPT, an innovative tool designed for bioinformatics data analysis and visualization. Mede-GPT leverages advanced generative models to process and plot complex datasets, facilitating insights into biological data.
@@ -23,7 +19,3 @@ Welcome to Mede-GPT, an innovative tool designed for bioinformatics data analysi
 ## Getting Started
 
 To get started with Mede-GPT, visit our web application at [Mede-GPT Streamlit App](https://mede-gpt.streamlit.app/). Follow the on-screen instructions to upload your data and start visualizing!
-
----
-
-This README provides an overview of your application, emphasizing its functionality and ease of use. You can adjust the content to better fit your specific features or additional details you wish to include.
