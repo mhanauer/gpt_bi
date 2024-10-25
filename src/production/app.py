@@ -31,7 +31,6 @@ def generate_python_code_prompt(df, question):
     START_CODE_TAG = "```"
     END_CODE_TAG = "```"
     num_rows, num_columns = df.shape
-    # Generate a string representation of column names and their types
     columns_info = "\n".join([f"{col}: {dtype}" for col, dtype in df.dtypes.items()])
     prompt = f"""
 You are provided with a pandas dataframe (df) with {num_rows} rows and {num_columns} columns.
@@ -48,7 +47,6 @@ When the prompt includes words like plot or graph use only Plotly for any plotti
 """
     return prompt
 
-
 def extract_python_code(output):
     match = re.search(r'```python\n(.*?)(```|$)', output, re.DOTALL)
     if match:
@@ -57,7 +55,6 @@ def extract_python_code(output):
         return cleaned_code
     else:
         raise ValueError("No valid Python code found in the output")
-
 
 def execute_code(code, df, question, max_retries=5):
     error_message = None
@@ -71,7 +68,6 @@ def execute_code(code, df, question, max_retries=5):
             fig = exec_locals.get('fig', None)
             if fig:
                 st.plotly_chart(fig)  # Display the Plotly figure
-                
                 return None, None
 
             st.write("No plot was generated.")
@@ -96,14 +92,11 @@ def execute_code(code, df, question, max_retries=5):
     return None, None
 
 def main():
-    st.title("MedeGPT")
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = os.path.join(current_dir, 'mede.png')
-    st.image(logo_path, width=300)  # Adjust the path and width as needed
-    st.write("Upload your dataset and enter your question about the data.")
-    
+    st.title("GenBI Demo")  # Updated title
 
+    st.write("Upload your dataset and enter your question about the data.")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file) 
         st.write("DataFrame Preview (just the first few rows):")
@@ -114,7 +107,6 @@ def main():
         if question:
             formatted_prompt = generate_python_code_prompt(df, question)
             output = ask_gpt(formatted_prompt)
-            
             
             try:
                 extracted_code = extract_python_code(output)
