@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import re
-import openai
+from openai import OpenAI
 import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
@@ -11,8 +11,8 @@ from dotenv import load_dotenv
 # Load environment variables
 api_key = st.secrets["OPENAI_API_KEY"]
 
-# Set up OpenAI client
-client = openai.OpenAI(api_key=api_key)
+# Set up OpenAI client without proxies
+client = OpenAI(api_key=api_key)
 
 def ask_gpt(prompt):
     """
@@ -20,7 +20,7 @@ def ask_gpt(prompt):
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-4",  # Replace with your desired GPT model
+            model="gpt-4",
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
@@ -63,11 +63,11 @@ def execute_code(code, df, question, max_retries=5):
     while retries <= max_retries:
         try:
             exec_locals = {'df': df, 'px': px, 'go': go, 'pd': pd, 'np': np}
-            exec(code, {}, exec_locals)  # Execute the code
+            exec(code, {}, exec_locals)
 
             fig = exec_locals.get('fig', None)
             if fig:
-                st.plotly_chart(fig)  # Display the Plotly figure
+                st.plotly_chart(fig)
                 return None, None
 
             st.write("No plot was generated.")
@@ -78,7 +78,7 @@ def execute_code(code, df, question, max_retries=5):
             return None, f"Syntax error: {e}"
         except Exception as e:
             error_message = str(e)
-            retries += 1  # Increment the retry counter
+            retries += 1
             if retries <= max_retries:
                 st.write(f"Attempting to fix the code. Retry {retries}/{max_retries}.")
                 df_head = df.head().to_string()
@@ -92,7 +92,7 @@ def execute_code(code, df, question, max_retries=5):
     return None, None
 
 def main():
-    st.title("GenBI Demo")  # Updated title
+    st.title("GenBI Demo")
 
     st.write("Upload your dataset and enter your question about the data.")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
