@@ -3,27 +3,28 @@ import pandas as pd
 import numpy as np
 import os
 import re
-from openai import OpenAI
+import anthropic
 import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
 
 # Load environment variables
-api_key = st.secrets["OPENAI_API_KEY"]
+api_key = st.secrets["ANTHROPIC_API_KEY"]
 
-# Set up OpenAI client without proxies
-client = OpenAI(api_key=api_key)
+# Set up Anthropic client
+client = anthropic.Anthropic(api_key=api_key)
 
-def ask_gpt(prompt):
+def ask_claude(prompt):
     """
-    This function takes a prompt and returns the response from OpenAI's GPT model.
+    This function takes a prompt and returns the response from Anthropic's Claude model.
     """
     try:
-        response = client.chat.completions.create(
-            model="gpt-4",
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message.content
+        return response.content[0].text
     except Exception as e:
         return f"An error occurred: {e}"
 
@@ -83,7 +84,7 @@ def execute_code(code, df, question, max_retries=5):
                 st.write(f"Attempting to fix the code. Retry {retries}/{max_retries}.")
                 df_head = df.head().to_string()
                 new_formatted_prompt = f"With this pandas dataframe (df): {df_head}\nAfter asking this question\n'{question}' \nI ran this code '{code}' \nAnd received this error message \n'{error_message}'. \nPlease provide new correct Python code."
-                output = ask_gpt(new_formatted_prompt)
+                output = ask_claude(new_formatted_prompt)
                 code = extract_python_code(output)
             else:
                 st.write(f"Failed to fix the code after {max_retries} retries. Last error: {error_message}")
@@ -92,7 +93,7 @@ def execute_code(code, df, question, max_retries=5):
     return None, None
 
 def main():
-    st.title("GenBI Demo")
+    st.title("GenBI Demo - Powered by Claude")
 
     st.write("Upload your dataset and enter your question about the data.")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -106,7 +107,7 @@ def main():
         
         if question:
             formatted_prompt = generate_python_code_prompt(df, question)
-            output = ask_gpt(formatted_prompt)
+            output = ask_claude(formatted_prompt)
             
             try:
                 extracted_code = extract_python_code(output)
